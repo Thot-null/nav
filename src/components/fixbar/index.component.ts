@@ -1,3 +1,4 @@
+// 开源项目MIT，未经作者同意，不得以抄袭/复制代码/修改源代码版权信息，允许商业途径。
 // Copyright @ 2018-present xiejiahe. All rights reserved. MIT license.
 // See https://github.com/xjh22222228/nav
 
@@ -11,9 +12,8 @@ import {
 import { isDark as isDarkFn, randomBgImg, queryString } from 'src/utils'
 import { NzModalService } from 'ng-zorro-antd/modal'
 import { NzMessageService } from 'ng-zorro-antd/message'
-import { NzNotificationService } from 'ng-zorro-antd/notification'
-import { getToken } from 'src/utils/user'
-import { updateFileContent } from 'src/services'
+import { isLogin } from 'src/utils/user'
+import { updateFileContent } from 'src/api'
 import { websiteList, settings } from 'src/store'
 import { DB_PATH, STORAGE_KEY_MAP } from 'src/constants'
 import { Router, ActivatedRoute } from '@angular/router'
@@ -38,7 +38,7 @@ export class FixbarComponent {
   websiteList = websiteList
   isDark: boolean = isDarkFn()
   syncLoading = false
-  isLogin = !!getToken()
+  isLogin = isLogin
   themeList = [
     {
       name: $t('_switchTo') + ' Super',
@@ -68,7 +68,6 @@ export class FixbarComponent {
 
   constructor(
     private message: NzMessageService,
-    private notification: NzNotificationService,
     private modal: NzModalService,
     private router: Router,
     private activatedRoute: ActivatedRoute
@@ -87,7 +86,10 @@ export class FixbarComponent {
 
   toggleTheme(theme: any) {
     this.router.navigate([theme.url], {
-      queryParams: queryString(),
+      queryParams: {
+        ...queryString(),
+        _: Date.now(),
+      },
     })
     this.removeBackground()
   }
@@ -157,12 +159,6 @@ export class FixbarComponent {
         })
           .then(() => {
             this.message.success($t('_syncSuccessTip'))
-          })
-          .catch((res: any) => {
-            this.notification.error(
-              `${$t('_error')}: ${res?.response?.status ?? 1401}`,
-              $t('_syncFailTip')
-            )
           })
           .finally(() => {
             this.syncLoading = false

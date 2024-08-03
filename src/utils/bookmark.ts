@@ -1,3 +1,4 @@
+// 开源项目MIT，未经作者同意，不得以抄袭/复制代码/修改源代码版权信息，允许商业途径。
 // Copyright @ 2018-present xie.jiahe. All rights reserved. MIT license.
 // See https://github.com/xjh22222228/nav
 
@@ -8,7 +9,7 @@ import { $t } from '../locale'
 let id = -Date.now()
 
 function getCreatedAt(node?: Element): string {
-  const now = new Date().toISOString()
+  const now = new Date().toString()
   if (!node) {
     return now
   }
@@ -19,7 +20,7 @@ function getCreatedAt(node?: Element): string {
     return now
   }
 
-  return new Date(Number(addDate) * 1000).toISOString()
+  return new Date(Number(addDate) * 1000).toString()
 }
 
 function getTitle(node: Element) {
@@ -213,15 +214,15 @@ export function parseBookmark(htmlStr: string) {
     }
   } catch (error) {
     console.log(error)
-    return error
+    throw error
   }
 
   // 增量导入
   function r(data: any[], list: any[]) {
     for (let i = 0; i < data.length; i++) {
       const item = data[i] as any
-      const title = item.title || item.name
-      const idx = list.findIndex((item) => (item.title || item.name) === title)
+      const title = item.title || item.url
+      const idx = list.findIndex((item) => (item.title || item.url) === title)
 
       // Repeat
       if (idx !== -1) {

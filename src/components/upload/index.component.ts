@@ -1,11 +1,11 @@
+// 开源项目MIT，未经作者同意，不得以抄袭/复制代码/修改源代码版权信息，允许商业途径。
 // Copyright @ 2018-present xiejiahe. All rights reserved. MIT license.
 // See https://github.com/xjh22222228/nav
 
 import { Component, EventEmitter, Output } from '@angular/core'
 import { $t } from 'src/locale'
 import { NzMessageService } from 'ng-zorro-antd/message'
-import { NzNotificationService } from 'ng-zorro-antd/notification'
-import { createFile, getCDN } from 'src/services'
+import { createFile, getCDN } from 'src/api'
 
 @Component({
   selector: 'app-upload',
@@ -19,10 +19,7 @@ export class UploadComponent {
   uploading: boolean = false
   id = `f${Date.now()}`
 
-  constructor(
-    private message: NzMessageService,
-    private notification: NzNotificationService
-  ) {}
+  constructor(private message: NzMessageService) {}
 
   onChangeFile(e: any) {
     if (this.uploading) {
@@ -70,13 +67,7 @@ export class UploadComponent {
             that.message.success($t('_uploadSuccess'))
             resolve(params)
           })
-          .catch((res) => {
-            that.notification.error(
-              `${$t('_error')}: ${res?.response?.status ?? 401}`,
-              $t('_uploadFail')
-            )
-            reject(res)
-          })
+          .catch(reject)
           .finally(() => {
             that.uploading = false
           })

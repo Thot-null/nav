@@ -1,4 +1,4 @@
-// @ts-nocheck
+// 开源项目MIT，未经作者同意，不得以抄袭/复制代码/修改源代码版权信息，允许商业途径。
 // Copyright @ 2018-present xiejiahe. All rights reserved. MIT license.
 // See https://github.com/xjh22222228/nav
 
@@ -6,10 +6,9 @@ import { Component } from '@angular/core'
 import { $t } from 'src/locale'
 import { FormBuilder, FormGroup } from '@angular/forms'
 import { NzMessageService } from 'ng-zorro-antd/message'
-import { NzNotificationService } from 'ng-zorro-antd/notification'
 import { NzModalService } from 'ng-zorro-antd/modal'
 import { SETTING_PATH } from 'src/constants'
-import { updateFileContent } from 'src/services'
+import { updateFileContent } from 'src/api'
 import { settings } from 'src/store'
 
 @Component({
@@ -22,10 +21,10 @@ export default class SystemSettingComponent {
   validateForm!: FormGroup
   submitting: boolean = false
   settings = settings
+  tabActive = 0
 
   constructor(
     private fb: FormBuilder,
-    private notification: NzNotificationService,
     private message: NzMessageService,
     private modal: NzModalService
   ) {
@@ -189,7 +188,7 @@ export default class SystemSettingComponent {
       nzOkText: $t('_confirmSync'),
       nzContent: $t('_confirmSyncTip'),
       nzOnOk: () => {
-        function filterImage(item) {
+        function filterImage(item: Record<string, any>) {
           return item['src']
         }
         const values = {
@@ -214,9 +213,6 @@ export default class SystemSettingComponent {
         })
           .then(() => {
             this.message.success($t('_saveSuccess'))
-          })
-          .catch((res) => {
-            this.notification.error($t('_error'), res.message as string)
           })
           .finally(() => {
             this.submitting = false

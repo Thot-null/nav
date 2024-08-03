@@ -1,10 +1,10 @@
+// 开源项目MIT，未经作者同意，不得以抄袭/复制代码/修改源代码版权信息，允许商业途径。
 // Copyright @ 2018-present xiejiahe. All rights reserved. MIT license.
 // See https://github.com/xjh22222228/nav
 
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core'
 import { NzMessageService } from 'ng-zorro-antd/message'
-import { NzNotificationService } from 'ng-zorro-antd/notification'
-import { verifyToken, updateFileContent, createBranch } from 'src/services'
+import { verifyToken, updateFileContent, createBranch } from 'src/api'
 import { setToken, removeToken, removeWebsite } from 'src/utils/user'
 import { $t } from 'src/locale'
 
@@ -21,10 +21,7 @@ export class LoginComponent implements OnInit {
   token = ''
   submiting = false
 
-  constructor(
-    private message: NzMessageService,
-    private notification: NzNotificationService
-  ) {}
+  constructor(private message: NzMessageService) {}
 
   ngOnInit() {}
 
@@ -54,17 +51,12 @@ export class LoginComponent implements OnInit {
               setTimeout(() => window.location.reload(), 2000)
             })
           })
-          .catch((res) => {
-            this.notification.error(
-              `${$t('_error')}: ${res?.response?.status ?? 401}`,
-              res.message
-            )
+          .catch(() => {
             removeToken()
             this.submiting = false
           })
       })
-      .catch((res) => {
-        this.notification.error($t('_tokenVerFail'), res.message as string)
+      .catch(() => {
         this.submiting = false
       })
   }

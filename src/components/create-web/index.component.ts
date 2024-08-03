@@ -1,3 +1,4 @@
+// 开源项目MIT，未经作者同意，不得以抄袭/复制代码/修改源代码版权信息，允许商业途径。
 // Copyright @ 2018-present xiejiahe. All rights reserved. MIT license.
 // See https://github.com/xjh22222228/nav
 
@@ -12,12 +13,11 @@ import {
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms'
 import { IWebProps } from 'src/types'
 import { NzMessageService } from 'ng-zorro-antd/message'
-import { NzNotificationService } from 'ng-zorro-antd/notification'
-import { createFile, saveUserCollect } from 'src/services'
+import { createFile, saveUserCollect } from 'src/api'
 import { $t } from 'src/locale'
 import { settings, websiteList, tagList, tagMap } from 'src/store'
 import event from 'src/utils/mitt'
-import { getToken } from 'src/utils/user'
+import { isLogin } from 'src/utils/user'
 
 @Component({
   selector: 'app-create-web',
@@ -28,9 +28,8 @@ export class CreateWebComponent {
   @Output() onOk = new EventEmitter()
 
   $t = $t
-  isLogin: boolean = !!getToken()
+  isLogin: boolean = isLogin
   validateForm!: FormGroup
-  iconUrl = ''
   tagList = tagList
   uploading = false
   getting = false
@@ -42,11 +41,7 @@ export class CreateWebComponent {
   threeIndex: number | undefined
   callback: Function = () => {}
 
-  constructor(
-    private fb: FormBuilder,
-    private message: NzMessageService,
-    private notification: NzNotificationService
-  ) {
+  constructor(private fb: FormBuilder, private message: NzMessageService) {
     event.on('CREATE_WEB', (props: any) => {
       this.open(this, props)
     })
@@ -64,6 +59,7 @@ export class CreateWebComponent {
       rate: [5],
       icon: [''],
       desc: [''],
+      index: [''],
       urlArr: this.fb.array([]),
     })
   }
@@ -91,6 +87,7 @@ export class CreateWebComponent {
     ctx.threeIndex = props.threeIndex
     this.validateForm.get('title')!.setValue(getTextContent(detail?.name))
     this.validateForm.get('desc')!.setValue(getTextContent(detail?.desc))
+    this.validateForm.get('index')!.setValue(detail?.index ?? '')
     this.validateForm.get('icon')!.setValue(detail?.icon || '')
     this.validateForm.get('url')!.setValue(detail?.url || '')
     this.validateForm.get('top')!.setValue(detail?.top ?? false)
@@ -112,13 +109,16 @@ export class CreateWebComponent {
     }
   }
 
+  get iconUrl() {
+    return this.validateForm.get('icon')?.value || ''
+  }
+
   onClose() {
     // @ts-ignore
     this.validateForm.get('urlArr').controls = []
     this.validateForm.reset()
     this.showModal = false
     this.detail = null
-    this.iconUrl = ''
     this.oneIndex = undefined
     this.twoIndex = undefined
     this.threeIndex = undefined
@@ -131,20 +131,26 @@ export class CreateWebComponent {
     if (!url) {
       return
     }
+    const iconVal = this.validateForm.get('icon')?.value
+    const titleVal = this.validateForm.get('title')?.value
+    const descVal = this.validateForm.get('desc')?.value
+    if (iconVal && titleVal && descVal) {
+      return
+    }
+
     this.getting = true
     const res = await getWebInfo(url)
-    if (res['url'] != null) {
-      this.iconUrl = res['url']
-      this.validateForm.get('icon')!.setValue(this.iconUrl)
+    if (res['url'] != null && !iconVal) {
+      this.validateForm.get('icon')!.setValue(res['url'])
     }
-    if (res['title'] != null) {
+    if (res['title'] != null && !titleVal) {
       this.validateForm.get('title')!.setValue(res['title'])
     }
-    if (res['description'] != null) {
+    if (res['description'] != null && !descVal) {
       this.validateForm.get('desc')!.setValue(res['description'])
     }
     if (res['status'] === false) {
-      this.message.error('自动抓取失败，请手动写入')
+      this.message.error(`自动抓取失败，请手动填写：${res['message']}`)
     }
     this.getting = false
   }
@@ -171,7 +177,7 @@ export class CreateWebComponent {
     fileReader.readAsDataURL(file)
     fileReader.onload = function () {
       that.uploading = true
-      that.iconUrl = this.result as string
+      that.validateForm.get('icon')!.setValue(this.result)
       const url = that.iconUrl.split(',')[1]
       const path = `nav-${Date.now()}-${file.name}`
 
@@ -185,12 +191,6 @@ export class CreateWebComponent {
         .then(() => {
           that.validateForm.get('icon')!.setValue(path)
           that.message.success($t('_uploadSuccess'))
-        })
-        .catch((res) => {
-          that.notification.error(
-            `${$t('_error')}: ${res?.response?.status ?? 401}`,
-            `${$t('_uploadFail')}：${res.message || ''}`
-          )
         })
         .finally(() => {
           that.uploading = false
@@ -215,9 +215,9 @@ export class CreateWebComponent {
       this.validateForm.controls[i].updateValueAndValidity()
     }
 
-    const createdAt = new Date().toISOString()
+    const createdAt = new Date().toString()
     let urls: Record<string, any> = {}
-    let { title, icon, url, top, ownVisible, rate, desc } =
+    let { title, icon, url, top, ownVisible, rate, desc, index } =
       this.validateForm.value
 
     if (!title || !url) return
@@ -225,7 +225,7 @@ export class CreateWebComponent {
     title = title.trim()
     const urlArr = this.validateForm.get('urlArr')?.value || []
     urlArr.forEach((item: any) => {
-      if (item.id != null) {
+      if (item.id) {
         urls[item.id] = item.url
       }
     })
@@ -237,6 +237,7 @@ export class CreateWebComponent {
       rate: rate ?? 5,
       desc: desc || '',
       top: top ?? false,
+      index,
       ownVisible: ownVisible ?? false,
       icon,
       url,
@@ -244,14 +245,7 @@ export class CreateWebComponent {
     }
 
     if (this.detail) {
-      const ok = updateByWeb(
-        {
-          ...this.detail,
-          name: getTextContent(this.detail.name),
-          desc: getTextContent(this.detail.desc),
-        },
-        payload as IWebProps
-      )
+      const ok = updateByWeb(this.detail, payload as IWebProps)
       if (ok) {
         this.message.success($t('_modifySuccess'))
       } else {
@@ -264,10 +258,6 @@ export class CreateWebComponent {
         const twoIndex = this.twoIndex ?? id
         const threeIndex = this.threeIndex as number
         const w = websiteList[oneIndex].nav[twoIndex].nav[threeIndex].nav
-        const exists = w.some((item: any) => item.name === payload.name)
-        if (exists) {
-          return this.message.error(`${$t('_repeatAdd')} "${payload.name}"`)
-        }
         this.uploading = true
         if (this.isLogin) {
           w.unshift(payload as IWebProps)
