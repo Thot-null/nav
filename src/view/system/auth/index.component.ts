@@ -3,17 +3,30 @@
 // See https://github.com/xjh22222228/nav
 
 import { Component } from '@angular/core'
+import { FormsModule } from '@angular/forms'
+import { CommonModule } from '@angular/common'
 import { $t } from 'src/locale'
 import { NzMessageService } from 'ng-zorro-antd/message'
 import { setAuthCode, getAuthCode, removeAuthCode } from 'src/utils/user'
 import { getUserInfo, updateUserInfo } from 'src/api'
+import { NzInputModule } from 'ng-zorro-antd/input'
+import { NzButtonModule } from 'ng-zorro-antd/button'
+import { NzSpinModule } from 'ng-zorro-antd/spin'
 
 @Component({
-  selector: 'user-collect',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    NzInputModule,
+    NzButtonModule,
+    NzSpinModule,
+  ],
+  selector: 'auth',
   templateUrl: './index.component.html',
   styleUrls: ['./index.component.scss'],
 })
-export default class VipAuthComponent {
+export default class AuthComponent {
   $t = $t
   submitting: boolean = false
   isPermission = !!getAuthCode()

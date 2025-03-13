@@ -3,18 +3,22 @@
 // See https://github.com/xjh22222228/nav
 
 import { Component } from '@angular/core'
+import { CommonModule } from '@angular/common'
+import { FormsModule } from '@angular/forms'
 import { $t } from 'src/locale'
 import { NzNotificationService } from 'ng-zorro-antd/notification'
-import { NzMessageService } from 'ng-zorro-antd/message'
-import { parseBookmark } from 'src/utils/bookmark'
 import { INavProps, IWebProps } from 'src/types'
 import { websiteList } from 'src/store'
 import { bookmarksExport, getIconBase64 } from 'src/api'
 import { saveAs } from 'file-saver'
 import { getAuthCode } from 'src/utils/user'
+import { NzSwitchModule } from 'ng-zorro-antd/switch'
+import { NzSpinModule } from 'ng-zorro-antd/spin'
 import LZString from 'lz-string'
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, NzSwitchModule, NzSpinModule, FormsModule],
   selector: 'system-bookmark-export',
   templateUrl: './index.component.html',
   styleUrls: ['./index.component.scss'],
@@ -28,16 +32,13 @@ export default class SystemBookmarkExportComponent {
   currentNumber = 0
   countAll = 0
 
-  constructor(
-    private message: NzMessageService,
-    private notification: NzNotificationService
-  ) {}
+  constructor(private notification: NzNotificationService) {}
 
   ngOnInit() {}
 
-  loadImage(url: string): Promise<HTMLImageElement | null> {
+  loadImage(iconUrl: string): Promise<HTMLImageElement | null> {
     return new Promise((resolve) => {
-      if (!url) {
+      if (!iconUrl) {
         return resolve(null)
       }
       const img = new Image()
@@ -48,20 +49,20 @@ export default class SystemBookmarkExportComponent {
       img.onerror = function () {
         resolve(null)
       }
-      img.src = url
+      img.src = iconUrl
     })
   }
 
-  async imageToBase64(item: IWebProps, isGet: boolean = true) {
-    const img = await this.loadImage(item.icon)
-    if (img) {
+  async imageToBase64(item: IWebProps, isGet: boolean = true): Promise<any> {
+    const iconUrl = await this.loadImage(item.icon)
+    if (iconUrl) {
       try {
         const size = 32
         const canvas = document.createElement('canvas')
         canvas.width = size
         canvas.height = size
         const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
-        ctx.drawImage(img, 0, 0, size, size)
+        ctx.drawImage(iconUrl, 0, 0, size, size)
         const dataURL = canvas.toDataURL()
         item.icon = dataURL
         return dataURL
@@ -92,9 +93,9 @@ export default class SystemBookmarkExportComponent {
     }
   }
 
-  async bookmarksExport() {
+  async bookmarksExport(): Promise<any> {
     if (!getAuthCode()) {
-      return this.notification.error('Error', '请授权')
+      return this.notification.error('Error', 'Bad credentials')
     }
 
     if (this.submitting) {
@@ -117,19 +118,22 @@ export default class SystemBookmarkExportComponent {
       }
       data.forEach((item) => {
         // 移除无用属性，减少传输大小
-        delete item.id
-        delete item.createdAt
-        delete item.rate
-        delete item.top
-        delete item.topTypes
-        delete item.index
-        delete item.ownVisible
-        delete item.breadcrumb
-        delete item.ok
-        delete item.__name__
-        delete item.__desc__
-        delete item.collapsed
-        delete item.tags
+        ;[
+          'id',
+          'rate',
+          'top',
+          'topTypes',
+          'index',
+          'ownVisible',
+          'breadcrumb',
+          'ok',
+          '__name__',
+          '__desc__',
+          'collapsed',
+          'tags',
+        ].forEach((key) => {
+          delete item[key]
+        })
         if (Array.isArray(item.nav)) {
           getIconItems(item.nav)
         }
@@ -150,12 +154,12 @@ export default class SystemBookmarkExportComponent {
 
     bookmarksExport({ data: LZString.compress(JSON.stringify(webs)) })
       .then((res) => {
-        const fileName = '发现导航书签.html'
+        const fileName = 'bookmarks.html'
         const blob = new Blob([res.data.data], {
           type: 'text/html;charset=utf-8',
         })
         saveAs(blob, fileName)
-        this.notification.success('导出成功', fileName, {
+        this.notification.success('OK', fileName, {
           nzDuration: 0,
         })
       })

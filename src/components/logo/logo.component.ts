@@ -2,8 +2,12 @@
 // Copyright @ 2018-present xiejiahe. All rights reserved.
 // See https://github.com/xjh22222228/nav
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core'
+import { CommonModule } from '@angular/common'
+import { randomColor } from 'src/utils'
 
 @Component({
+  standalone: true,
+  imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-logo',
   templateUrl: './logo.component.html',
@@ -16,7 +20,27 @@ export class LogoComponent {
   @Input() radius: number = 3
   @Input() check: boolean = true
 
+  backgroundColor: string = '#1890ff'
+  firstLetter: string = ''
+  isError: boolean = false
+
   constructor() {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    if (!this.src) {
+      this.generateColor()
+    }
+    if (this.name) {
+      this.firstLetter = this.name[0].toUpperCase()
+    }
+  }
+
+  generateColor() {
+    this.backgroundColor = `linear-gradient(45deg, #fff, ${randomColor()} 41%)`
+  }
+
+  onError() {
+    this.isError = true
+    this.generateColor()
+  }
 }
